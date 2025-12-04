@@ -1,4 +1,7 @@
 import java.util.Queue;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.PriorityQueue;
 
 public class Hospital {
@@ -8,6 +11,9 @@ public class Hospital {
         // stores Patient objects in a queue, dictionary, and hash table
         // dictionary: key = id, value = Patient object
         // hash table: key = ssn, value = billing info(starts at 0)
+        // triage nurse object and used to create priority queue
+        // rooms object created with priority queue
+        // use rooms method
     }
 }
 
@@ -72,5 +78,26 @@ class TriageNurse {
 
     PriorityQueue<Patient> getPriorityQueue() {
         return priority;
+    }
+}
+
+class Rooms {
+    ArrayList<LinkedList<Patient>> doctors;
+    Hashtable<Integer, Integer> billing;
+    int capacityPerDoctor = 5;
+
+    Rooms(PriorityQueue<Patient> pq, Hashtable<Integer, Integer> b) {
+        doctors = new ArrayList<LinkedList<Patient>>(10);
+        ; // each index represents a doctor
+        billing = b;
+    }
+
+    void assignPatients() {
+        // increment through rooms, assign patients from priority,
+        // treat upon incrementation, remove if treated
+    }
+
+    void addToOutputFile() {
+        // use this method when removing a patient from rooms
     }
 }
