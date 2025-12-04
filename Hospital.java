@@ -13,7 +13,7 @@ public class Hospital {
         // hash table: key = ssn, value = billing info(starts at 0)
         // triage nurse object and used to create priority queue
         // rooms object created with priority queue
-        // use rooms method
+        // use rooms meth
     }
 }
 
