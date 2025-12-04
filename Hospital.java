@@ -1,3 +1,6 @@
+import java.util.Queue;
+import java.util.PriorityQueue;
+
 public class Hospital {
     public static void main(String[] args) {
         // reads input file
@@ -52,5 +55,22 @@ class Patient {
 
     int getSeenCount() {
         return seenCount;
+    }
+}
+
+class TriageNurse {
+    Queue<Integer> incoming; // contains patient ids
+    PriorityQueue<Patient> priority = new PriorityQueue<Patient>(); // contains patient ids
+
+    TriageNurse(Queue<Integer> q) {
+        incoming = q;
+    }
+
+    void assessPatient(int id, int severity) {
+        // sets patient severity and adds to priority queue
+    }
+
+    PriorityQueue<Patient> getPriorityQueue() {
+        return priority;
     }
 }
