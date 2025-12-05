@@ -87,6 +87,11 @@ class Patient {
     int getSeenCount() {
         return seenCount;
     }
+    void decreaseServerity(){
+        if (severity >0){
+            severity --;
+        }
+    }
 }
 
 class PriorityQueue {
@@ -114,7 +119,23 @@ class PriorityQueue {
     private int rightChild(int i) {
         return 2 * i + 2;
     }
-
+    private int getSeverityOfIndex(int index){
+        int patientID = heap[index];
+        Patient p = patientsById.get(patientId);4
+        if (p==null) return Integer.MAX_VALUE;
+        return p.getSeverity();
+    }
+    private int getSeverityOfId(int patientId) {
+        Patient p = patientsDict.get(patientId);
+        if (p == null) return Integer.MAX_VALUE;
+        return p.getSeverity();
+    }
+    public boolean isEmpty(){
+        return size ==0;
+    }
+    public int size(){
+        return size;
+    }
     // Insert a new value into the heap
     public void insert(int id) {
         if (size == capacity) {
@@ -122,20 +143,18 @@ class PriorityQueue {
             return;
         }
 
-        heap[size] = ids.get(id).getSeverity();
-        int current = size;
+        heap[size] = id;
+        int current=size;
         size++;
 
         // Heapify up
-        while (ids.get(current).getSeverity() != 0 && ids.get(
-                heap[current]).getSeverity() < ids.get(heap[parent(current)]).getSeverity()) {
+         while (current > 0 &&
+            getSeverityOfIndex(current) < getSeverityOfIndex(parent(current))) {
             swap(current, parent(current));
             current = parent(current);
         }
-
         System.out.println("Inserted " + id);
     }
-
     // Get the minimum value (root)
     public int peek() {
         if (size == 0)
@@ -148,13 +167,12 @@ class PriorityQueue {
         if (size == 0)
             throw new IllegalStateException("Heap is empty");
 
-        int min = heap[0];
+        int minId = heap[0];
         heap[0] = heap[size - 1];
         size--;
 
         heapifyDown(0);
-
-        return min;
+        return minId;
     }
 
     // Restore heap property downward
@@ -163,11 +181,12 @@ class PriorityQueue {
         int left = leftChild(i);
         int right = rightChild(i);
 
-        if (left < size && ids.get(heap[left]).getSeverity() < ids.get(heap[smallest]).getSeverity())
+        if (left < size && getSeverityOfIndex(left) < getSeverityOfIndex(smallest)) {
             smallest = left;
-        if (right < size && ids.get(heap[right]).getSeverity() < ids.get(heap[smallest]).getSeverity())
+        }
+        if (right < size && getSeverityOfIndex(right) < getSeverityOfIndex(smallest)) {
             smallest = right;
-
+        }
         if (smallest != i) {
             swap(i, smallest);
             heapifyDown(smallest);
@@ -202,32 +221,129 @@ class TriageNurse {
             System.out.println( "No Patient with ID" + id);
         return;
     }
-    p.setSeverity(severity);
-    priority.add(p);
-    system.out.println("Triage:Patient " + id + " (")
-
-    PriorityQueue getPriorityQueue() {
-        return priority;
+    System.out.println("\nTriage next patient:");
+        System.out.println("ID: " + p.getId() +
+                    ", Name: " + p.name +
+                   ", Age: " + p.age +
+                   ", Symptoms: " + p.getSymptoms());
+    
+        int severity = -1;
+        boolean valid = false;
+        while (!valid) {
+            System.out.print("Enter severity (1 = see now, 2 = medium, 3 = low): ");
+            String line = input.nextLine().trim();
+            try {
+                severity = Integer.parseInt(line);
+                if (severity >= 1 && severity <= 3) {
+                    valid = true;
+                } else {
+                    System.out.println("Please enter 1, 2, or 3.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid number, please enter 1, 2, or 3.");
+            }
+        }
+        // update patient + insert id into priority queue
+        p.setSeverity(severity);
+        priority.insert(id);
+        System.out.println("Patient " + id + " triaged with severity " + severity);
     }
-}
+
 
 class Rooms {
     ArrayList<LinkedList<Patient>> doctors;
     Hashtable<Integer, Integer> billing;
-    int capacityPerDoctor = 5;
+    Dictionary<Integer, Patient> parientsDict;
+    int capacityPerDoctor =10;
 
-    Rooms(PriorityQueue pq, Hashtable<Integer, Integer> b) {
-        doctors = new ArrayList<LinkedList<Patient>>(10);
-        ; // each index represents a doctor
-        billing = b;
+    Rooms(PriorityQueue pq,
+          Hashtable<Integer, Integer> billingTable,
+          Dictionary<Integer, Patient> patientsDict) {
+        triage = pq;
+        billing = billingTable;
+        this.patientsDict = patientsDict;
+
+        doctors = new ArrayList<LinkedList<Patient>>(NUM_DOCTORS);
+        for (int i = 0; i < NUM_DOCTORS; i++) {
+            doctors.add(new LinkedList<Patient>());
+        }
     }
+
 
     void assignPatients() {
-        // increment through rooms, assign patients from priority,
-        // treat upon incrementation, remove if treated
+        for (int docIndex = 0; docIndex < doctors.size(); docIndex++) {
+            LinkedList<Patient> docList = doctors.get(docIndex);
+            if (docList.isEmpty()) continue;
+
+            System.out.println("Doctor " + docIndex + " is treating " + docList.size() + " patients.");
+
+            var it = docList.iterator();
+            while (it.hasNext()) {
+                Patient p = it.next();//
+         // One visit
+                p.decreaseSeverity();
+                p.incSeenCount();
+             // HASH TABLE: ssn -> bill
+                int ssn = p.getSSN();
+                Integer current = billing.get(ssn);
+                if (current == null) current = 0;
+                billing.put(ssn, current + VISIT_COST);
+
+                System.out.println("  Doctor " + docIndex +
+                        " visited patient " + p.getId() +
+                        " (new severity " + p.getSeverity() +
+                        ", total visits " + p.getSeenCount() +
+                        ", current bill $" + billing.get(ssn) + ")");
+         // discharge if severity reaches 0
+                if (p.getSeverity() <= 0) {
+                    System.out.println("  -> Patient " + p.getId() + " is discharged.");
+                    it.remove();
+                    // Allie can later call addToOutputFile
+                }
+            }
+        }
+        for (int docIndex = 0; docIndex < doctors.size(); docIndex++) {
+            LinkedList<Patient> docList = doctors.get(docIndex);
+
+            while (docList.size() < capacityPerDoctor && !triage.isEmpty()) {
+                int nextId = triage.pop();          // get next patient ID by priority
+                Patient p = patientsDict.get(nextId);
+                if (p == null) continue;
+                docList.add(p);
+                System.out.println("Doctor " + docIndex +
+                        " admits patient " + p.getId() +
+                        " with severity " + p.getSeverity());
+            }
+        }
+    }
+    boolean hasActivePatients() {
+        for (LinkedList<Patient> docList : doctors) {
+            if (!docList.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
     }
 
-    void addToOutputFile() {
-        // use this method when removing a patient from rooms
+    void addToOutputFile(Patient p) {
+        // Person 3 (Allie) can implement file writing here
+        // using:
+        //   p.getId(), p.getSSN(), p.getSeenCount(), billing.get(p.getSSN())
+    }
+
+    void printDoctorStatus() {
+        System.out.println("\n--- Doctors & Patients ---");
+        for (int i = 0; i < doctors.size(); i++) {
+            LinkedList<Patient> docList = doctors.get(i);
+            System.out.print("Doctor " + i + " has " + docList.size() + " patients: ");
+            for (Patient p : docList) {
+                System.out.print("#" + p.getId() +
+                        "(sev " + p.getSeverity() +
+                        ", visits " + p.getSeenCount() + ")  ");
+            }
+            System.out.println();
+        }
     }
 }
+
