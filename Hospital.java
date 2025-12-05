@@ -1,4 +1,6 @@
 import java.util.Queue;
+import java.util.Scanner;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -6,7 +8,23 @@ import java.util.PriorityQueue;
 
 public class Hospital {
     public static void main(String[] args) {
+
         // reads input file
+        try{
+            File file = new File("All ER Patients"); // adjust extension if needed
+            Scanner fileScanner = new Scanner(file);
+
+            while (fileScanner.hasNextLine()) {
+                String line = fileScanner.nextLine().trim();
+                if (line.isEmpty()) {
+                    continue; // skip blank lines
+                }
+            String[] parts = line.split(",",7);
+            if (parts.length <7){
+                System.out.println("line skip");
+                continue;
+            }
+        }
         // turns each line into a Patient object
         // stores Patient objects in a queue, dictionary, and hash table
         // dictionary: key = id, value = Patient object
@@ -14,6 +32,7 @@ public class Hospital {
         // triage nurse object and used to create priority queue
         // rooms object created with priority queue
         // use rooms meth
+        
     }
 }
 
@@ -37,6 +56,7 @@ class Patient {
         symptoms = sym;
         seenCount = 0;
         id = idNum;
+        severity=0; //will be set by User
     }
 
     String getSymptoms() {
@@ -67,14 +87,26 @@ class Patient {
 class TriageNurse {
     Queue<Integer> incoming; // contains patient ids
     PriorityQueue<Patient> priority = new PriorityQueue<Patient>(); // contains patient ids
+    Hashtable<Integer, Patient> patientsById;
+    Scanner input;
 
-    TriageNurse(Queue<Integer> q) {
+    TriageNurse(Queue<Integer> q, Hashtable<Integer, Patient>patientsById, Scanner in) {
         incoming = q;
+        this.patientsById = patientsById;
+        priority = new PriorityQueue<Patient>();
+        input = in;
     }
 
     void assessPatient(int id, int severity) {
         // sets patient severity and adds to priority queue
+        Patient p = patientsById.get(id);
+        if (p==null)
+            System.out.println( "No Patient with ID" + id);
+        return;
     }
+    p.setSeverity(severity);
+    priority.add(p);
+    system.out.println("Triage:Patient " + id + " (")
 
     PriorityQueue<Patient> getPriorityQueue() {
         return priority;
