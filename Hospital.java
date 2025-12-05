@@ -98,14 +98,15 @@ class PriorityQueue {
     private int[] heap;
     private int size;
     private int capacity;
-    private Dictionary<Integer, Patient> ids;
+    private Dictionary<Integer, Patient> patientsDict;
 
-    public PriorityQueue(int capacity, Dictionary<Integer, Patient> dict) {
+     public PriorityQueue(int capacity, Dictionary<Integer, Patient> dict) {
         this.capacity = capacity;
         this.size = 0;
         this.heap = new int[capacity];
-        this.ids = dict;
+        this.patientsDict = dict;
     }
+
 
     // Get index helpers
     private int parent(int i) {
@@ -119,12 +120,13 @@ class PriorityQueue {
     private int rightChild(int i) {
         return 2 * i + 2;
     }
-    private int getSeverityOfIndex(int index){
-        int patientID = heap[index];
-        Patient p = patientsById.get(patientId);4
-        if (p==null) return Integer.MAX_VALUE;
+    private int getSeverityOfIndex(int index) {
+        int patientId = heap[index];
+        Patient p = patientsDict.get(patientId);
+        if (p == null) return Integer.MAX_VALUE; // treat missing as very low priority
         return p.getSeverity();
     }
+
     private int getSeverityOfId(int patientId) {
         Patient p = patientsDict.get(patientId);
         if (p == null) return Integer.MAX_VALUE;
@@ -139,7 +141,7 @@ class PriorityQueue {
     // Insert a new value into the heap
     public void insert(int id) {
         if (size == capacity) {
-            System.out.println("Heap is full!");
+            System.out.println("PriorityQueue is full!");
             return;
         }
 
@@ -158,14 +160,16 @@ class PriorityQueue {
     // Get the minimum value (root)
     public int peek() {
         if (size == 0)
-            throw new IllegalStateException("Heap is empty");
+            throw new IllegalStateException("PriorityQueue is empty");
+        {
         return heap[0];
-    }
+        }
 
     // Remove and return the minimum value
     public int pop() {
         if (size == 0)
-            throw new IllegalStateException("Heap is empty");
+            throw new IllegalStateException("PriorityQueue is empty");
+        }
 
         int minId = heap[0];
         heap[0] = heap[size - 1];
@@ -174,7 +178,6 @@ class PriorityQueue {
         heapifyDown(0);
         return minId;
     }
-
     // Restore heap property downward
     private void heapifyDown(int i) {
         int smallest = i;
@@ -187,11 +190,13 @@ class PriorityQueue {
         if (right < size && getSeverityOfIndex(right) < getSeverityOfIndex(smallest)) {
             smallest = right;
         }
+
         if (smallest != i) {
             swap(i, smallest);
             heapifyDown(smallest);
         }
     }
+
 
     // Swap elements at two positions
     private void swap(int i, int j) {
@@ -207,20 +212,24 @@ class TriageNurse {
     Dictionary<Integer, Patient> patientsById;
     Scanner input;
 
-    TriageNurse(Queue<Integer> q, Hashtable<Integer, Patient>patientsById, Scanner in) {
+    TriageNurse(Queue<Integer> q,
+                Dictionary<Integer, Patient> patientsDict,
+                Scanner in,
+                int maxPatients) {
         incoming = q;
-        this.patientsById = patientsById;
-        priority = new PriorityQueue(incoming.size(), patientsById);
+        this.patientsDict = patientsDict;
+        priority = new PriorityQueue(maxPatients, patientsDict);
         input = in;
     }
 
-    void assessPatient(int id, int severity) {
-        // sets patient severity and adds to priority queue
-        Patient p = patientsById.get(id);
-        if (p==null)
-            System.out.println( "No Patient with ID" + id);
-        return;
-    }
+    // Ask user to assign severity for this patient and insert into PQ
+    void assessPatientInteractive(int id) {
+        Patient p = patientsDict.get(id);
+        if (p == null) {
+            System.out.println("Triage error: No patient with ID " + id);
+            return;
+        }
+
     System.out.println("\nTriage next patient:");
         System.out.println("ID: " + p.getId() +
                     ", Name: " + p.name +
@@ -248,13 +257,24 @@ class TriageNurse {
         priority.insert(id);
         System.out.println("Patient " + id + " triaged with severity " + severity);
     }
+    void triageAllPatientsInteractive() {
+        while (!incoming.isEmpty()) {
+            int nextId = incoming.poll();
+            assessPatientInteractive(nextId);
+        }
+    }
+
 
 
 class Rooms {
-    ArrayList<LinkedList<Patient>> doctors;
-    Hashtable<Integer, Integer> billing;
-    Dictionary<Integer, Patient> parientsDict;
-    int capacityPerDoctor =10;
+    ArrayList<LinkedList<Patient>> doctors;   // each index = one doctor
+    Hashtable<Integer, Integer> billing;      // HASH TABLE: ssn -> total bill
+    Dictionary<Integer, Patient> patientsDict; // DICTIONARY: id -> Patient
+    PriorityQueue triage;                     // PRIORITY QUEUE: patient IDs
+
+    int capacityPerDoctor = 10;
+    static final int NUM_DOCTORS = 10;
+    static final int VISIT_COST = 500;        // $500 per visit
 
     Rooms(PriorityQueue pq,
           Hashtable<Integer, Integer> billingTable,
@@ -269,21 +289,30 @@ class Rooms {
         }
     }
 
-
+    // One "treatment round":
+    // 1) Each doctor visits each of their patients once:
+    //      - severity--
+    //      - seenCount++
+    //      - billing[ssn] += 500
+    //      - if severity == 0 → discharge
+    // 2) Then fill open slots (up to 10 per doctor) from triage PQ.
     void assignPatients() {
+        // Step 1: treat current patients
         for (int docIndex = 0; docIndex < doctors.size(); docIndex++) {
             LinkedList<Patient> docList = doctors.get(docIndex);
             if (docList.isEmpty()) continue;
 
             System.out.println("Doctor " + docIndex + " is treating " + docList.size() + " patients.");
 
-            var it = docList.iterator();
+            java.util.Iterator<Patient> it = docList.iterator();
             while (it.hasNext()) {
-                Patient p = it.next();//
-         // One visit
+                Patient p = it.next();
+
+                // One visit
                 p.decreaseSeverity();
                 p.incSeenCount();
-             // HASH TABLE: ssn -> bill
+
+                // HASH TABLE: ssn -> bill
                 int ssn = p.getSSN();
                 Integer current = billing.get(ssn);
                 if (current == null) current = 0;
@@ -294,14 +323,17 @@ class Rooms {
                         " (new severity " + p.getSeverity() +
                         ", total visits " + p.getSeenCount() +
                         ", current bill $" + billing.get(ssn) + ")");
-         // discharge if severity reaches 0
+
+                // discharge if severity reaches 0
                 if (p.getSeverity() <= 0) {
                     System.out.println("  -> Patient " + p.getId() + " is discharged.");
                     it.remove();
-                    // Allie can later call addToOutputFile
+                    // Allie can later call addToOutputFile(p) here.
                 }
             }
         }
+
+        // Step 2: fill open slots from triage PQ
         for (int docIndex = 0; docIndex < doctors.size(); docIndex++) {
             LinkedList<Patient> docList = doctors.get(docIndex);
 
@@ -324,7 +356,7 @@ class Rooms {
         }
         return false;
     }
-    }
+
 
     void addToOutputFile(Patient p) {
         // Person 3 (Allie) can implement file writing here
@@ -345,5 +377,6 @@ class Rooms {
             System.out.println();
         }
     }
+}
 }
 
