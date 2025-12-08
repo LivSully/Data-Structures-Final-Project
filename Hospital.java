@@ -128,8 +128,6 @@ public class Hospital {
     }
 }
 
-// ====================== Patient ======================
-
 class Patient {
     String name;
     int age;
@@ -187,8 +185,6 @@ class Patient {
         }
     }
 }
-
-// ================== Custom PriorityQueue ==================
 
 class PriorityQueue {
     private int[] heap; // stores patient IDs
@@ -311,8 +307,6 @@ class PriorityQueue {
     }
 }
 
-// ====================== TriageNurse ======================
-
 class TriageNurse {
     Queue<Integer> incoming; // contains patient IDs
     PriorityQueue priority; // priority queue of patient IDs
@@ -378,8 +372,6 @@ class TriageNurse {
         return priority;
     }
 }
-
-// ========================== Rooms ==========================
 
 class Rooms {
     ArrayList<LinkedList<Patient>> doctors; // each index = one doctor
