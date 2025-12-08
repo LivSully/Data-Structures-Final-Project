@@ -2,7 +2,6 @@ import java.util.Queue;
 import java.util.Scanner;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -21,11 +20,13 @@ public class Hospital {
         // DICTIONARY: patient ID -> Patient object
         Dictionary<Integer, Patient> patientsById = new Hashtable<>();
 
-        // HASH TABLE: SSN -> total bill
-        Hashtable<Integer, Integer> billing = new Hashtable<>();
+        // HASH TABLE: SSN(String) -> total bill(Integer)
+        Hashtable<String, Integer> billing = new Hashtable<>();
 
         // Read patients from file
         String fileName = (args.length > 0) ? args[0] : "All ER Patients.txt";
+
+        int nextId = 1; // auto-assigned patient IDs
 
         try (Scanner fileScanner = new Scanner(new File(fileName))) {
             while (fileScanner.hasNextLine()) {
@@ -34,6 +35,8 @@ public class Hospital {
                     continue; // skip blank lines
                 }
 
+                // Example line:
+                // Aaron, Whitford, 28, 182lbs, 70in, 180-22-9481, Condition: Severe migraine
                 String[] parts = line.split(",", 7);
                 if (parts.length < 7) {
                     System.out.println("Skipping malformed line: " + line);
@@ -41,19 +44,29 @@ public class Hospital {
                 }
 
                 try {
-                    String name = parts[0].trim();
-                    int age = Integer.parseInt(parts[1].trim());
-                    String weight = parts[2].trim();
-                    String height = parts[3].trim();
-                    int ssn = Integer.parseInt(parts[4].trim());
-                    String symptoms = parts[5].trim();
-                    int id = Integer.parseInt(parts[6].trim());
+                    String firstName = parts[0].trim();
+                    String lastName  = parts[1].trim();
+                    String name      = firstName + " " + lastName;
+
+                    int age          = Integer.parseInt(parts[2].trim());
+                    String weight    = parts[3].trim();
+                    String height    = parts[4].trim();
+                    String ssn       = parts[5].trim();
+                    String symptoms  = parts[6].trim();
+
+                    // Strip "Condition:" prefix if present
+                    String lower = symptoms.toLowerCase();
+                    if (lower.startsWith("condition:")) {
+                        symptoms = symptoms.substring("condition:".length()).trim();
+                    }
+
+                    int id = nextId++;
 
                     Patient p = new Patient(name, age, weight, height, ssn, symptoms, id);
 
                     patientsById.put(id, p);
-                    billing.put(ssn, 0); // start bill at 0
-                    incoming.add(id); // add to incoming queue
+                    billing.put(ssn, 0);   // start bill at 0
+                    incoming.add(id);      // add to incoming queue
 
                 } catch (NumberFormatException e) {
                     System.out.println("Skipping line with bad number(s): " + line);
@@ -107,10 +120,9 @@ public class Hospital {
         while (ids.hasMoreElements()) {
             int id = ids.nextElement();
             Patient p = patientsById.get(id);
-            int ssn = p.getSSN();
+            String ssn = p.getSSN();
             Integer total = billing.get(ssn);
-            if (total == null)
-                total = 0;
+            if (total == null) total = 0;
             System.out.println("ID " + p.getId() + ", " + p.name +
                     ", SSN " + ssn +
                     ", Visits " + p.getSeenCount() +
@@ -126,13 +138,13 @@ class Patient {
     int age;
     String weight;
     String height;
-    int ssn;
+    String ssn;        // now a String like "180-22-9481"
     String symptoms;
-    int seenCount; // number of times patient has been seen
-    int id; // unique identifier for each patient
-    int severity; // user determined
+    int seenCount;     // number of times patient has been seen
+    int id;            // unique identifier for each patient
+    int severity;      // user determined (1, 2, or 3)
 
-    Patient(String n, int a, String w, String h, int s, String sym, int idNum) {
+    Patient(String n, int a, String w, String h, String s, String sym, int idNum) {
         name = n;
         age = a;
         weight = w;
@@ -160,7 +172,7 @@ class Patient {
         return id;
     }
 
-    int getSSN() {
+    String getSSN() {
         return ssn;
     }
 
@@ -182,7 +194,7 @@ class Patient {
 // ================== Custom PriorityQueue ==================
 
 class PriorityQueue {
-    private int[] heap; // stores patient IDs
+    private int[] heap;    // stores patient IDs
     private int size;
     private int capacity;
     private Dictionary<Integer, Patient> patientsDict;
@@ -211,17 +223,14 @@ class PriorityQueue {
     private int getSeverityOfIndex(int index) {
         int patientId = heap[index];
         Patient p = patientsDict.get(patientId);
-        if (p == null)
-            return Integer.MAX_VALUE; // treat missing as very low priority
+        if (p == null) return Integer.MAX_VALUE; // treat missing as very low priority
         return p.getSeverity();
     }
 
-    // Helper in case you want severity of a specific ID
     @SuppressWarnings("unused")
     private int getSeverityOfId(int patientId) {
         Patient p = patientsDict.get(patientId);
-        if (p == null)
-            return Integer.MAX_VALUE;
+        if (p == null) return Integer.MAX_VALUE;
         return p.getSeverity();
     }
 
@@ -306,22 +315,22 @@ class PriorityQueue {
 // ====================== TriageNurse ======================
 
 class TriageNurse {
-    Queue<Integer> incoming; // contains patient IDs
-    PriorityQueue priority; // priority queue of patient IDs
+    Queue<Integer> incoming;           // contains patient IDs
+    PriorityQueue priority;            // priority queue of patient IDs
     Dictionary<Integer, Patient> patientsDict;
     Scanner input;
 
     TriageNurse(Queue<Integer> q,
-            Dictionary<Integer, Patient> patientsDict,
-            Scanner in,
-            int maxPatients) {
+                Dictionary<Integer, Patient> patientsDict,
+                Scanner in,
+                int maxPatients) {
         incoming = q;
         this.patientsDict = patientsDict;
         priority = new PriorityQueue(maxPatients, patientsDict);
         input = in;
     }
 
-    // Ask user to assign severity for this patient and insert into PQ
+    // Ask user (triage nurse) to assign severity for this patient and insert into PQ
     void assessPatientInteractive(int id) {
         Patient p = patientsDict.get(id);
         if (p == null) {
@@ -329,7 +338,8 @@ class TriageNurse {
             return;
         }
 
-        System.out.println("\nTriage next patient:");
+        System.out.println("\n--- TRIAGE ---");
+        System.out.println("Next patient:");
         System.out.println("ID: " + p.getId() +
                 ", Name: " + p.name +
                 ", Age: " + p.age +
@@ -372,18 +382,18 @@ class TriageNurse {
 // ========================== Rooms ==========================
 
 class Rooms {
-    ArrayList<LinkedList<Patient>> doctors; // each index = one doctor
-    Hashtable<Integer, Integer> billing; // HASH TABLE: ssn -> total bill
+    ArrayList<LinkedList<Patient>> doctors;   // each index = one doctor
+    Hashtable<String, Integer> billing;       // HASH TABLE: ssn -> total bill
     Dictionary<Integer, Patient> patientsDict; // DICTIONARY: id -> Patient
-    PriorityQueue triage; // PRIORITY QUEUE: patient IDs
+    PriorityQueue triage;                     // PRIORITY QUEUE: patient IDs
 
     int capacityPerDoctor = 10;
     static final int NUM_DOCTORS = 10;
-    static final int VISIT_COST = 500; // $500 per visit
+    static final int VISIT_COST = 500;        // $500 per visit
 
     Rooms(PriorityQueue pq,
-            Hashtable<Integer, Integer> billingTable,
-            Dictionary<Integer, Patient> patientsDict) {
+          Hashtable<String, Integer> billingTable,
+          Dictionary<Integer, Patient> patientsDict) {
         triage = pq;
         billing = billingTable;
         this.patientsDict = patientsDict;
@@ -396,17 +406,16 @@ class Rooms {
 
     // One "treatment round":
     // 1) Each doctor visits each of their patients once:
-    // - severity--
-    // - seenCount++
-    // - billing[ssn] += 500
-    // - if severity == 0 → discharge (write to file)
+    //      - severity--
+    //      - seenCount++
+    //      - billing[ssn] += 500
+    //      - if severity == 0 → discharge (write to file)
     // 2) Then fill open slots (up to 10 per doctor) from triage PQ.
     void assignPatients() {
         // Step 1: treat current patients
         for (int docIndex = 0; docIndex < doctors.size(); docIndex++) {
             LinkedList<Patient> docList = doctors.get(docIndex);
-            if (docList.isEmpty())
-                continue;
+            if (docList.isEmpty()) continue;
 
             System.out.println("Doctor " + docIndex + " is treating " + docList.size() + " patients.");
 
@@ -419,10 +428,9 @@ class Rooms {
                 p.incSeenCount();
 
                 // HASH TABLE: ssn -> bill
-                int ssn = p.getSSN();
+                String ssn = p.getSSN();
                 Integer current = billing.get(ssn);
-                if (current == null)
-                    current = 0;
+                if (current == null) current = 0;
                 billing.put(ssn, current + VISIT_COST);
 
                 System.out.println("  Doctor " + docIndex +
@@ -435,7 +443,7 @@ class Rooms {
                 if (p.getSeverity() <= 0) {
                     System.out.println("  -> Patient " + p.getId() + " is discharged.");
                     it.remove();
-                    addToOutputFile(p); // write this patient's billing info to txt file
+                    addToOutputFile(p);  // write this patient's billing info to txt file
                 }
             }
         }
@@ -445,10 +453,9 @@ class Rooms {
             LinkedList<Patient> docList = doctors.get(docIndex);
 
             while (docList.size() < capacityPerDoctor && !triage.isEmpty()) {
-                int nextId = triage.pop(); // get next patient ID by priority
+                int nextId = triage.pop();          // get next patient ID by priority
                 Patient p = patientsDict.get(nextId);
-                if (p == null)
-                    continue;
+                if (p == null) continue;
                 docList.add(p);
                 System.out.println("Doctor " + docIndex +
                         " admits patient " + p.getId() +
@@ -468,13 +475,19 @@ class Rooms {
 
     // Write one discharged patient's info to PatientBilling.txt
     void addToOutputFile(Patient p) {
-        String info = "ID: " + p.getId()
-                + ", Name: " + p.name
-                + ", SSN: " + p.getSSN()
-                + ", Visits: " + p.getSeenCount()
-                + ", Total Bill: $" + billing.get(p.getSSN()) + "\n";
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("PatientBilling.txt", true))) {
-            writer.write(info);
+        String ssn = p.getSSN();
+        Integer total = billing.get(ssn);
+        if (total == null) total = 0;
+
+        try (FileWriter fw = new FileWriter("PatientBilling.txt", true);
+             PrintWriter pw = new PrintWriter(fw)) {
+
+            pw.println("ID: " + p.getId()
+                    + ", Name: " + p.name
+                    + ", SSN: " + ssn
+                    + ", Visits: " + p.getSeenCount()
+                    + ", Total Bill: $" + total);
+
         } catch (IOException e) {
             System.out.println("Error writing to output file: " + e.getMessage());
         }
