@@ -129,15 +129,15 @@ public class Hospital {
 }
 
 class Patient {
-    String name;
-    int age;
-    String weight;
-    String height;
-    String ssn; // now a String like "180-22-9481"
-    String symptoms;
-    int seenCount; // number of times patient has been seen
-    int id; // unique identifier for each patient
-    int severity; // user determined (1, 2, or 3)
+    private String name;
+    private int age;
+    private String weight;
+    private String height;
+    private String ssn; // now a String like "180-22-9481"
+    private String symptoms;
+    private int seenCount; // number of times patient has been seen
+    private int id; // unique identifier for each patient
+    private int severity; // user determined (1, 2, or 3)
 
     Patient(String n, int a, String w, String h, String s, String sym, int idNum) {
         name = n;
@@ -183,6 +183,22 @@ class Patient {
         if (severity > 0) {
             severity--;
         }
+    }
+
+    String getName() {
+        return name;
+    }
+
+    int getAge() {
+        return age;
+    }
+
+    String getWeight() {
+        return weight;
+    }
+
+    String getHeight() {
+        return height;
     }
 }
 
@@ -308,10 +324,10 @@ class PriorityQueue {
 }
 
 class TriageNurse {
-    Queue<Integer> incoming; // contains patient IDs
-    PriorityQueue priority; // priority queue of patient IDs
-    Dictionary<Integer, Patient> patientsDict;
-    Scanner input;
+    private Queue<Integer> incoming; // contains patient IDs
+    private PriorityQueue priority; // priority queue of patient IDs
+    private Dictionary<Integer, Patient> patientsDict;
+    private Scanner input;
 
     TriageNurse(Queue<Integer> q,
             Dictionary<Integer, Patient> patientsDict,
@@ -335,8 +351,8 @@ class TriageNurse {
         System.out.println("\n--- TRIAGE ---");
         System.out.println("Next patient:");
         System.out.println("ID: " + p.getId() +
-                ", Name: " + p.name +
-                ", Age: " + p.age +
+                ", Name: " + p.getName() +
+                ", Age: " + p.getAge() +
                 ", Symptoms: " + p.getSymptoms());
 
         int severity = -1;
@@ -374,12 +390,12 @@ class TriageNurse {
 }
 
 class Rooms {
-    ArrayList<LinkedList<Patient>> doctors; // each index = one doctor
-    Hashtable<String, Integer> billing; // HASH TABLE: ssn -> total bill
-    Dictionary<Integer, Patient> patientsDict; // DICTIONARY: id -> Patient
-    PriorityQueue triage; // PRIORITY QUEUE: patient IDs
+    private ArrayList<LinkedList<Patient>> doctors; // each index = one doctor
+    private Hashtable<String, Integer> billing; // HASH TABLE: ssn -> total bill
+    private Dictionary<Integer, Patient> patientsDict; // DICTIONARY: id -> Patient
+    private PriorityQueue triage; // PRIORITY QUEUE: patient IDs
 
-    int capacityPerDoctor = 10;
+    private int capacityPerDoctor = 10;
     static final int NUM_DOCTORS = 10;
     static final int VISIT_COST = 500; // $500 per visit
 
@@ -479,7 +495,7 @@ class Rooms {
                 PrintWriter pw = new PrintWriter(fw)) {
 
             pw.println("ID: " + p.getId()
-                    + ", Name: " + p.name
+                    + ", Name: " + p.getName()
                     + ", SSN: " + ssn
                     + ", Visits: " + p.getSeenCount()
                     + ", Total Bill: $" + total);
