@@ -180,8 +180,8 @@ class Patient {
     }
 
     void decreaseSeverity() {
-        if (severity > 0) {
-            severity--;
+        if (severity < 4) {
+            severity++;
         }
     }
 
@@ -358,7 +358,7 @@ class TriageNurse {
         int severity = -1;
         boolean valid = false;
         while (!valid) {
-            System.out.print("Enter severity (1 = low, 2 = medium, 3 = see now): ");
+            System.out.print("Enter severity (1 = see now, 2 = medium, 3 = low): ");
             String line = input.nextLine().trim();
             try {
                 severity = Integer.parseInt(line);
@@ -450,7 +450,7 @@ class Rooms {
                         ", current bill $" + billing.get(ssn) + ")");
 
                 // discharge if severity reaches 0
-                if (p.getSeverity() <= 0) {
+                if (p.getSeverity() >= 4) {
                     System.out.println("  -> Patient " + p.getId() + " is discharged.");
                     it.remove();
                     addToOutputFile(p); // write this patient's billing info to txt file
