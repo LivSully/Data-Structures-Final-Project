@@ -358,7 +358,7 @@ class TriageNurse {
         int severity = -1;
         boolean valid = false;
         while (!valid) {
-            System.out.print("Enter severity (1 = see now, 2 = medium, 3 = low): ");
+            System.out.print("Enter severity (1 = low, 2 = medium, 3 = see now): ");
             String line = input.nextLine().trim();
             try {
                 severity = Integer.parseInt(line);
